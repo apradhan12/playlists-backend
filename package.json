@@ -8,6 +8,10 @@
     "cors": "^2.8.4",
     "express": "~4.16.0",
     "got": "^11.8.2",
+    "mysql2": "^2.2.5",
     "querystring": "~0.2.0"
+  },
+  "devDependencies": {
+    "prisma": "^2.21.2"
   }
 }

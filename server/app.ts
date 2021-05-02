@@ -7,9 +7,8 @@
  * https://developer.spotify.com/web-api/authorization-guide/#authorization_code_flow
  */
 const express = require('express'); // Express web server framework
-
+const mysql = require('mysql2');
 const got = require('got');
-
 const cors = require('cors');
 const querystring = require('querystring');
 const cookieParser = require('cookie-parser');
@@ -32,6 +31,23 @@ const generateRandomString = function (length) {
   }
   return text;
 };
+
+const con = mysql.createConnection({
+  host: "localhost",
+  port: 3306,
+  user: "root",
+  password: process.env.DATABASE_PASSWORD
+});
+
+con.connect(err => {
+  if (err) throw err;
+  console.log("Connected successfully!");
+  // con.query("USE playlists_app;");
+  // con.query("INSERT INTO song_requests (playlist_id, request_type, song_id) VALUES ('playlist1', 'add', 'song-let-her-go');", (err, result) => {
+  //   if (err) throw err;
+  //   console.log("Record added to table");
+  // });
+});
 
 const stateKey = 'spotify_auth_state';
 
@@ -92,16 +108,16 @@ app.get('/callback', function(req, res) {
       const refresh_token = body.refresh_token;
 
       // use the access token to access the Spotify Web API
-      got('https://api.spotify.com/v1/me', {
-        method: "get",
-        headers: {'Authorization': 'Bearer ' + access_token},
-        responseType: "json"
-      }).then(response => {
-        console.log(JSON.stringify(response.body));
-      });
+      // got('https://api.spotify.com/v1/me', {
+      //   method: "get",
+      //   headers: {'Authorization': 'Bearer ' + access_token},
+      //   responseType: "json"
+      // }).then(response => {
+      //   console.log(JSON.stringify(response.body));
+      // });
 
       // we can also pass the token to the browser to make requests from there
-      res.redirect('http://localhost:3000/?' +
+      res.redirect('http://localhost:3000/callback?' +
           querystring.stringify({
             access_token: access_token,
             refresh_token: refresh_token
