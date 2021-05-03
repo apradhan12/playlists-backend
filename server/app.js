@@ -6,12 +6,17 @@
  * For more information, read
  * https://developer.spotify.com/web-api/authorization-guide/#authorization_code_flow
  */
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express'); // Express web server framework
 const mysql = require('mysql2');
 const got = require('got');
 const cors = require('cors');
 const querystring = require('querystring');
 const cookieParser = require('cookie-parser');
+
+const requests = require('./lib/requests');
 
 const client_id = process.env.CLIENT_ID; // Your client id
 const client_secret = process.env.CLIENT_SECRET; // Your secret
@@ -39,15 +44,15 @@ const con = mysql.createConnection({
   password: process.env.DATABASE_PASSWORD
 });
 
-con.connect(err => {
-  if (err) throw err;
-  console.log("Connected successfully!");
-  // con.query("USE playlists_app;");
-  // con.query("INSERT INTO song_requests (playlist_id, request_type, song_id) VALUES ('playlist1', 'add', 'song-let-her-go');", (err, result) => {
-  //   if (err) throw err;
-  //   console.log("Record added to table");
-  // });
-});
+// con.connect(err => {
+//   if (err) throw err;
+//   console.log("Connected successfully!");
+//   // con.query("USE playlists_app;");
+//   // con.query("INSERT INTO song_requests (playlist_id, request_type, song_id) VALUES ('playlist1', 'add', 'song-let-her-go');", (err, result) => {
+//   //   if (err) throw err;
+//   //   console.log("Record added to table");
+//   // });
+// });
 
 const stateKey = 'spotify_auth_state';
 
@@ -56,6 +61,8 @@ const app = express();
 app.use(express.static(__dirname + '/../public'))
    .use(cors())
    .use(cookieParser());
+
+app.use(requests);
 
 app.get('/login', function(req, res) {
 
