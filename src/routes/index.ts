@@ -6,19 +6,19 @@ import {callback, login, refreshToken} from "./login.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-const songRouter = Router();
+const songRouter = Router({mergeParams: true});
 songRouter.put('/', updateSongs);
 
-const requestRouter = Router();
+const requestRouter = Router({mergeParams: true});
 requestRouter.get('/', getSongRequests);
 requestRouter.post('/', requestSongs);
 requestRouter.put('/:requestId', updateRequestStatus);
 
-const adminRouter = Router();
+const adminRouter = Router({mergeParams: true});
 adminRouter.get('/', getAdministrators);
 adminRouter.put('/', updateAdministrators);
 
-const playlistRouter = Router();
+const playlistRouter = Router({mergeParams: true});
 playlistRouter.use('/songs', songRouter);
 playlistRouter.use('/requests', requestRouter);
 playlistRouter.use('/administrators', adminRouter);
