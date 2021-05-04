@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: Public Collaborative Playlists
+  version: 1.0.0
+tags:
+  - name: song
+    description: Songs
+  - name: request
+    description: Song requests
+  - name: admin
+    description: Administrators
+paths:
+  /playlist/{playlistId}/requests:
+    post:
+      tags:
+        - request
+      summary: Request to add or remove songs to/from a playlist
+      operationId: requestSong
+      parameters:
+        - name: playlistId
+          in: path
+          description: ID of playlist
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Song IDs to request to add/remove
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SongUpdateList'
+      responses:
+        201:
+          description: The requests for each of the songs have been created, or the requests for some of the songs have been created but the specified songs could not be added due to the state of the playlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistSongsDifference'
+  /playlist/{playlistId}/administrators:
+    put:
+      tags:
+        - admin
+      summary: Update the administrators of a playlist
+      operationId: updateAdministrators
+      parameters:
+        - name: playlistId
+          in: path
+          description: ID of playlist
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Administrator user IDs to add/remove
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateList'
+      responses:
+        200:
+          description: The administrators have been updated
+  /playlist/{playlistId}/request/{requestId}:
+    put:
+      tags:
+        - request
+      summary: Approve or reject a request, or undo the acceptance or rejection of a request
+      operationId: updateRequestStatus
+      parameters:
+        - name: playlistId
+          in: path
+          description: ID of playlist
+          required: true
+          schema:
+            type: string
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: New request status
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SongRequestStatusUpdate'
+      responses:
+        200:
+          description: The status of the request has been updated. If "approved" or "rejected", the request will be removed from the database at the given timestamp.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletionTimestamp'
+        404:
+          description: The request or playlist does not exist
+  /playlists/{playlistId}/songs:
+    put:
+      tags:
+        - song
+      summary: Update the songs in a playlist
+      operationId: updateSongs
+      parameters:
+        - name: playlistId
+          in: path
+          description: ID of playlist
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Song IDs to add/remove
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SongUpdateList'
+      responses:
+        200:
+          description: The songs have been updated
+        409:
+          description: The specified songs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaylistSongsDifference'
+components:
+  schemas:
+    SongUpdateList:
+      type: object
+      properties:
+        songsToAdd:
+          type: array
+          items:
+            type: string
+        songsToRemove:
+          type: array
+          items:
+            type: string
+    PlaylistSongsDifference:
+      type: object
+      properties:
+        songsAlreadyInPlaylist:
+          type: array
+          items:
+            type: string
+        songsNotInPlaylist:
+          type: array
+          items:
+            type: string
+    UserUpdateList:
+      type: object
+      properties:
+        idsToAdd:
+          type: array
+          items:
+            type: string
+        idsToRemove:
+          type: array
+          items:
+            type: string
+    DeletionTimestamp:
+      type: object
+      properties:
+        deleteAt:
+          type: string
+          format: date-time
+    SongRequestStatusUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, approved, rejected]
