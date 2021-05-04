@@ -19,3 +19,11 @@ export async function requestSongs(req: Request, res: Response) {
 export async function updateRequestStatus(req: Request, res: Response) {
     return res.status(OK).json({});
 }
+
+export async function voteForRequest(req: Request, res: Response) {
+
+}
+
+export async function removeVoteForRequest(req: Request, res: Response) {
+
+}

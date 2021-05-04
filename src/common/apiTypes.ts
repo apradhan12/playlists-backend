@@ -9,13 +9,32 @@ export interface Tokens {
     refresh_token: string;
 }
 
+export interface SongList {
+    areYouAdmin: boolean;
+    songs: Song[];
+}
+
+export interface Song {
+    title: string;
+    artist: string;
+    album: string;
+    dateAdded: string;
+    duration: number;
+}
+
 export interface SongRequestList {
+    areYouAdmin: boolean;
     addRequests: SongRequest[];
     removeRequests: SongRequest[];
 }
 
 export interface SongRequest {
-    songId: string;
+    requestId: number;
+    title: string;
+    artist: string;
+    album: string;
+    dateAdded: string;
+    duration: number;
     numVotes: number;
     hasYourVote: boolean;
 }
@@ -36,7 +55,7 @@ export interface UserUpdateList {
 }
 
 export interface DeletionTimestamp {
-    deleteAt: Date;
+    deleteAt: string;
 }
 
 export interface SongRequestStatusUpdate {

@@ -84,7 +84,7 @@ paths:
       tags:
         - request
       summary: Request to add or remove songs to/from a playlist
-      operationId: requestSong
+      operationId: requestSongs
       parameters:
         - name: playlistId
           in: path
@@ -105,6 +105,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaylistSongsDifference'
+  /playlists/{playlistId}/requests/{requestId}/vote:
+    post:
+      tags:
+        - request
+      summary: Vote for a song request
+      operationId: voteForRequest
+      parameters:
+        - name: playlistId
+          in: path
+          description: ID of playlist
+          required: true
+          schema:
+            type: string
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: integer
+      responses:
+        201:
+          description: The vote has been added
+    delete:
+      tags:
+        - request
+      summary: Remove vote for a song request
+      operationId: removeVoteForRequest
+      parameters:
+        - name: playlistId
+          in: path
+          description: ID of playlist
+          required: true
+          schema:
+            type: string
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: The vote has been removed
   /playlists/{playlistId}/administrators:
     get:
       tags:
@@ -164,7 +207,7 @@ paths:
           description: ID of request
           required: true
           schema:
-            type: string
+            type: integer
       requestBody:
         description: New request status
         content:
@@ -181,6 +224,25 @@ paths:
         404:
           description: The request or playlist does not exist
   /playlists/{playlistId}/songs:
+    get:
+      tags:
+        - song
+      summary: Get the songs in a playlist
+      operationId: getSongs
+      parameters:
+        - name: playlistId
+          in: path
+          description: ID of playlist
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Fetched songs successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongList'
     put:
       tags:
         - song
@@ -203,7 +265,7 @@ paths:
         200:
           description: The songs have been updated
         409:
-          description: The specified songs
+          description: One or more of the specified songs conflict with the playlist state
           content:
             application/json:
               schema:
@@ -215,9 +277,35 @@ components:
       properties:
         access_token:
           type: string
+    SongList:
+      type: object
+      properties:
+        areYouAdmin:
+          type: boolean
+        songs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Song'
+    Song:
+      type: object
+      properties:
+        title:
+          type: string
+        artist:
+          type: string
+        album:
+          type: string
+        dateAdded:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          description: Duration in milliseconds
     SongRequestList:
       type: object
       properties:
+        areYouAdmin:
+          type: boolean
         addRequests:
           type: array
           items:
@@ -229,8 +317,20 @@ components:
     SongRequest:
       type: object
       properties:
-        songId:
+        requestId:
+          type: integer
+        title:
           type: string
+        artist:
+          type: string
+        album:
+          type: string
+        dateAdded:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          description: Duration in milliseconds
         numVotes:
           type: integer
         hasYourVote:
