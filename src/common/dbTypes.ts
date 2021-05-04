@@ -26,3 +26,9 @@ export interface Administrator {
     playlist_id: string;
     user_id: string;
 }
+
+export interface User {
+    user_id: string;
+    access_token: string;
+    refresh_token: string;
+}

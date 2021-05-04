@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
-import got from "got";
+import got, { Response as GotResponse } from 'got';
 import querystring from "querystring";
+import {db} from "../common/database.js";
+import {User} from "../common/dbTypes.js";
 
 const STATE_KEY = 'spotify_auth_state';
 const CLIENT_ID = process.env.CLIENT_ID; // Your client id
@@ -65,26 +67,37 @@ export async function callback(req: Request, res: Response) {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
             responseType: "json"
-        }).then((response: any) => {
+        }).then((response: GotResponse<any>) => {
             const body = response.body;
             const access_token = body.access_token;
             const refresh_token = body.refresh_token;
 
             // use the access token to access the Spotify Web API
-            // got('https://api.spotify.com/v1/me', {
-            //   method: "get",
-            //   headers: {'Authorization': 'Bearer ' + access_token},
-            //   responseType: "json"
-            // }).then(response => {
-            //   console.log(JSON.stringify(response.body));
-            // });
-
-            // we can also pass the token to the browser to make requests from there
-            res.redirect('http://localhost:3000/callback?' +
-                querystring.stringify({
+            got('https://api.spotify.com/v1/me', {
+                method: "get",
+                headers: {'Authorization': 'Bearer ' + access_token},
+                responseType: "json"
+            }).then(async (response: GotResponse<any>) => {
+                const userId = response.body.id;
+                const user: User = {
+                    user_id: userId,
                     access_token: access_token,
                     refresh_token: refresh_token
-                }));
+                }
+                // TODO: make this a transaction?
+                await db("users")
+                    .where("user_id", userId)
+                    .del();
+                await db("users").insert(user);
+                console.log(`Inserted ${JSON.stringify(user)}`);
+
+                // we can also pass the token to the browser to make requests from there
+                res.redirect('http://localhost:3000/callback?' +
+                    querystring.stringify({
+                        access_token: access_token,
+                        refresh_token: refresh_token
+                    }));
+            });
         }).catch((error: any) => {
             console.log(`ERROR: ${error}`);
             res.redirect('/#' +
@@ -95,6 +108,7 @@ export async function callback(req: Request, res: Response) {
     }
 }
 
+// todo: update users database in this function?
 export async function refreshToken(req: Request, res: Response) {
     // requesting access token from refresh token
     const refresh_token = req.query.refresh_token;

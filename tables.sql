@@ -30,3 +30,10 @@ ALTER TABLE song_requests ADD (
     status ENUM('pending', 'approved', 'rejected') NOT NULL,
     delete_at DATETIME
 );
+
+CREATE TABLE users (
+    user_id VARCHAR(50) NOT NULL,
+    access_token VARCHAR(512) NOT NULL,
+    refresh_token VARCHAR(512) NOT NULL,
+    PRIMARY KEY (user_id)
+);
