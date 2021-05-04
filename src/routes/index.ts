@@ -3,6 +3,8 @@ import {updateSongs} from "./songs.js";
 import {getSongRequests, requestSongs, updateRequestStatus} from "./requests.js";
 import {getAdministrators, updateAdministrators} from "./administrators.js";
 import {callback, login, refreshToken} from "./login.js";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
 const songRouter = Router();
 songRouter.put('/', updateSongs);
@@ -22,6 +24,8 @@ playlistRouter.use('/requests', requestRouter);
 playlistRouter.use('/administrators', adminRouter);
 
 const baseRouter = Router();
+baseRouter.use(cors())
+    .use(cookieParser());
 baseRouter.use('/playlists/:playlistId', playlistRouter);
 baseRouter.get('/login', login);
 baseRouter.get('/callback', callback);

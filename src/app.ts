@@ -1,5 +1,4 @@
-import * as dotenv from "dotenv";
-dotenv.config();
+import "./loadEnv.js"
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import express from "express";
