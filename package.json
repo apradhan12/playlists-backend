@@ -3,19 +3,23 @@
   "name": "collaborative-public-playlists",
   "description": "Collaborative public playlists for Spotify",
   "version": "1.0.0",
-  "main": "server/app.js",
+  "main": "src/app.js",
+  "type": "module",
   "dependencies": {
+    "@types/got": "^9.6.11",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.4",
     "dotenv": "^8.2.0",
     "express": "^4.16.4",
     "got": "^11.8.2",
+    "http-status-codes": "^2.1.4",
     "knex": "^0.95.4",
     "mysql2": "^2.2.5",
-    "querystring": "~0.2.0",
-    "typeorm": "^0.2.32"
+    "querystring": "~0.2.0"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.2",
+    "@types/cors": "^2.8.10",
     "@types/express": "^4.17.11",
     "@types/node": "^15.0.1",
     "ts-node": "^9.1.1",

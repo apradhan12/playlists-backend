@@ -60,7 +60,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccessToken'
-  /playlist/{playlistId}/requests:
+  /playlists/{playlistId}/requests:
     get:
       tags:
         - request
@@ -105,7 +105,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaylistSongsDifference'
-  /playlist/{playlistId}/administrators:
+  /playlists/{playlistId}/administrators:
     get:
       tags:
         - admin
@@ -146,7 +146,7 @@ paths:
       responses:
         200:
           description: The administrators have been updated
-  /playlist/{playlistId}/request/{requestId}:
+  /playlists/{playlistId}/requests/{requestId}:
     put:
       tags:
         - request
