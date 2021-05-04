@@ -1,3 +1,3 @@
 #!/bin/bash
 
-node ./server/app.js
+npm run build && node ./build/app.js

@@ -20,7 +20,7 @@ app.get("/requests/:playlistId", (req: Request, res: Response) => {
         .where({
             playlist_id: req.params.playlistId
         })
-        .then(rows => {
+        .then((rows: any) => {
             res.send(rows);
         });
 });
