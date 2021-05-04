@@ -1,3 +1,5 @@
+import { Request, Response } from "express";
+
 const knex = require('knex')({
     client: "mysql2",
     connection: {
@@ -13,7 +15,7 @@ const express = require("express");
 const app = express();
 module.exports = app;
 
-app.get("/requests/:playlistId", (req, res) => {
+app.get("/requests/:playlistId", (req: Request, res: Response) => {
     knex.select().from("song_requests")
         .where({
             playlist_id: req.params.playlistId
@@ -23,6 +25,6 @@ app.get("/requests/:playlistId", (req, res) => {
         });
 });
 
-app.post("/requests/:playlistId", (req, res) => {
+app.post("/requests/:playlistId", (req: Request, res: Response) => {
 
 });

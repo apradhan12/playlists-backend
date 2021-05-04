@@ -9,6 +9,9 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
+import { Request, Response } from 'express';
+import { Response as GotResponse } from 'got';
+
 const express = require('express'); // Express web server framework
 const mysql = require('mysql2');
 const got = require('got');
@@ -27,7 +30,7 @@ const redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
  * @param  {number} length The length of the string
  * @return {string} The generated string
  */
-const generateRandomString = function (length) {
+const generateRandomString = function (length: number) {
   let text = '';
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
@@ -64,7 +67,7 @@ app.use(express.static(__dirname + '/../public'))
 
 app.use(requests);
 
-app.get('/login', function(req, res) {
+app.get('/login', function(req: Request, res: Response) {
 
   const state = generateRandomString(16);
   res.cookie(stateKey, state);
@@ -81,7 +84,12 @@ app.get('/login', function(req, res) {
     }));
 });
 
-app.get('/callback', function(req, res) {
+interface Tokens {
+  access_token: string;
+  refresh_token: string;
+}
+
+app.get('/callback', function(req: Request, res: Response) {
 
   // your application requests refresh and access tokens
   // after checking the state parameter
@@ -109,7 +117,7 @@ app.get('/callback', function(req, res) {
         "Content-Type": "application/x-www-form-urlencoded"
       },
       responseType: "json"
-    }).then(response => {
+    }).then((response: { body: Tokens; }) => {
       const body = response.body;
       const access_token = body.access_token;
       const refresh_token = body.refresh_token;
@@ -129,7 +137,7 @@ app.get('/callback', function(req, res) {
             access_token: access_token,
             refresh_token: refresh_token
           }));
-    }).catch(error => {
+    }).catch((error: any) => {
       console.log(`ERROR: ${error}`);
       res.redirect('/#' +
           querystring.stringify({
@@ -139,7 +147,7 @@ app.get('/callback', function(req, res) {
   }
 });
 
-app.get('/refresh_token', function(req, res) {
+app.get('/refresh_token', function(req: Request, res: Response) {
 
   // requesting access token from refresh token
   const refresh_token = req.query.refresh_token;
@@ -155,7 +163,7 @@ app.get('/refresh_token', function(req, res) {
       'Authorization': 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64')),
       "Content-Type": "application/x-www-form-urlencoded"
     }
-  }).then(response => {
+  }).then((response: GotResponse<Tokens>) => {
     const access_token = response.body.access_token;
     res.send({
       'access_token': access_token
