@@ -3,6 +3,8 @@ info:
   title: Public Collaborative Playlists
   version: 1.0.0
 tags:
+  - name: login
+    description: Login
   - name: song
     description: Songs
   - name: request
@@ -10,7 +12,74 @@ tags:
   - name: admin
     description: Administrators
 paths:
+  /login:
+    get:
+      tags:
+        - login
+      summary: Log into your Spotify account
+      operationId: login
+      responses:
+        302:
+          description: Redirect to Spotify authorization page
+  /callback:
+    get:
+      tags:
+        - login
+      summary: Get access and refresh tokens from Spotify authorization code and state
+      operationId: callback
+      parameters:
+        - name: code
+          in: query
+          description: Authorization code
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: Authorization state
+          schema:
+            type: string
+      responses:
+        302:
+          description: Redirect to application page
+  /refresh_token:
+    get:
+      tags:
+        - login
+      summary: Get new access token from refresh token
+      operationId: refreshToken
+      parameters:
+        - name: refresh_token
+          in: query
+          description: Refresh token
+          schema:
+            type: string
+      responses:
+        200:
+          description: Obtained new access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
   /playlist/{playlistId}/requests:
+    get:
+      tags:
+        - request
+      summary: Get the song requests for a playlist
+      operationId: getSongRequests
+      parameters:
+        - name: playlistId
+          in: path
+          description: ID of playlist
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Fetched song requests successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SongRequestList'
     post:
       tags:
         - request
@@ -37,6 +106,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlaylistSongsDifference'
   /playlist/{playlistId}/administrators:
+    get:
+      tags:
+        - admin
+      summary: Get the administrators of a playlist
+      operationId: getAdministrators
+      parameters:
+        - name: playlistId
+          in: path
+          description: ID of playlist
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Fetched administrators successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserList'
     put:
       tags:
         - admin
@@ -122,6 +210,31 @@ paths:
                 $ref: '#/components/schemas/PlaylistSongsDifference'
 components:
   schemas:
+    AccessToken:
+      type: object
+      properties:
+        access_token:
+          type: string
+    SongRequestList:
+      type: object
+      properties:
+        addRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/SongRequest'
+        removeRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/SongRequest'
+    SongRequest:
+      type: object
+      properties:
+        songId:
+          type: string
+        numVotes:
+          type: integer
+        hasYourVote:
+          type: boolean
     SongUpdateList:
       type: object
       properties:
@@ -147,11 +260,18 @@ components:
     UserUpdateList:
       type: object
       properties:
-        idsToAdd:
+        usersToAdd:
           type: array
           items:
             type: string
-        idsToRemove:
+        usersToRemove:
+          type: array
+          items:
+            type: string
+    UserList:
+      type: object
+      properties:
+        users:
           type: array
           items:
             type: string
