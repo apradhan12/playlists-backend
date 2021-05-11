@@ -1,7 +1,8 @@
 import { GeneralError } from "./errors.js";
-import {NextFunction, Request, Response} from "express";
+import {Request, Response} from "express";
 
-export const handleErrors = (err: any, req: Request, res: Response, next: NextFunction) => {
+export const handleErrors = (err: any, req: Request, res: Response) => {
+    console.error(err);
     if (err instanceof GeneralError) {
         return res.status(err.getCode()).json({
             status: 'error',
