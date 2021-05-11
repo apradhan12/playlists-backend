@@ -6,7 +6,7 @@ export interface SongRequest {
     request_type: RequestType;
     song_id: string;
     created_at: Date;
-    status: RequestStatus;
+    request_status: RequestStatus;
     delete_at?: Date;
 }
 

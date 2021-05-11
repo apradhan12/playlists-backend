@@ -43,3 +43,5 @@ ALTER TABLE request_votes DROP FOREIGN KEY request_votes_ibfk_1;
 ALTER TABLE request_votes
     ADD CONSTRAINT fk_request_id
         FOREIGN KEY (request_id) REFERENCES song_requests (request_id) ON DELETE CASCADE;
+
+ALTER TABLE song_requests CHANGE status request_status ENUM('pending', 'approved', 'rejected') NOT NULL;

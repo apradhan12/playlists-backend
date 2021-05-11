@@ -67,7 +67,7 @@ export async function getSongRequests(req: Request, res: Response) {
         .from({r: "song_requests"}).leftJoin({v: "request_votes"}, "r.request_id", "=", "v.request_id")
         .where({
             "r.playlist_id": req.params.playlistId,
-            "r.status": RequestStatus.Pending
+            "r.request_status": RequestStatus.Pending
         })
         .groupBy("r.request_id");
 
@@ -75,7 +75,7 @@ export async function getSongRequests(req: Request, res: Response) {
         .from({r: "song_requests"}).leftJoin({v: "request_votes"}, "r.request_id", "=", "v.request_id")
         .where({
             "r.playlist_id": req.params.playlistId,
-            "r.status": RequestStatus.Pending,
+            "r.request_status": RequestStatus.Pending,
             "v.user_id": userId
         });
     const requestsWithYourVoteArray: number[] = requestsWithYourVote.map(r => r.request_id);
@@ -86,13 +86,13 @@ select sr.request_id
 from song_requests sr
          left join request_votes v on v.request_id = sr.request_id
 where sr.playlist_id = 'playlist1'
-  and v.user_id = 'aaron' and sr.status = 'pending';
+  and v.user_id = 'aaron' and sr.request_status = 'pending';
      */
     /*
 SELECT r.request_id, r.request_type, r.song_id, r.created_at, COUNT(v.request_id) AS num_votes
 FROM song_requests AS r LEFT JOIN request_votes AS v
                                   ON r.request_id = v.request_id
-WHERE r.playlist_id = 'playlist1' AND r.status = 'pending'
+WHERE r.playlist_id = 'playlist1' AND r.request_status = 'pending'
 GROUP BY r.request_id;
      */
 
@@ -211,7 +211,7 @@ export async function requestSongs(req: Request, res: Response) {
             playlist_id: req.params.playlistId,
             request_type: request[1],
             song_id: request[0],
-            status: commonTypes.RequestStatus.Pending,
+            request_status: commonTypes.RequestStatus.Pending,
         })));
         const firstRequestId = requestIdList[0];
         await db("request_votes").insert(_.range(firstRequestId, firstRequestId + newRequests.length).map(requestId => ({
