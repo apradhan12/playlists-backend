@@ -1,13 +1,12 @@
-import { Request, Response } from 'express';
+import {Request, Response} from 'express';
 import StatusCodes from "http-status-codes";
 import {db} from "../common/database.js";
-import {SongRequestList} from "../common/apiTypes.js";
+import * as apiTypes from "../common/apiTypes.js";
 import assert from "assert";
 import * as dbTypes from "../common/dbTypes.js";
-import * as apiTypes from "../common/apiTypes.js";
-import got, { Response as GotResponse } from "got";
-import _ from "lodash";
+import got, {Response as GotResponse} from "got";
 import {RequestStatus} from "../common/commonTypes.js";
+import {Unauthorized} from "../common/errors.js";
 
 const { OK, BAD_REQUEST } = StatusCodes;
 
@@ -23,16 +22,14 @@ interface RequestId {
     request_id: number;
 }
 
-export async function getSongRequests(req: Request, res: Response) {
-    console.log("getting song requests");
+async function getUserId(authHeader: string | undefined): Promise<string> {
     // validate Authorization header
-    const authHeader = req.header("Authorization");
     if (authHeader === undefined) {
-        return res.status(BAD_REQUEST).json({}); // todo
+        throw new Unauthorized("Missing authorization header");
     }
     const regexMatch = authHeader.match(/^Bearer (.*)$/);
     if (regexMatch === null) {
-        return res.status(BAD_REQUEST).json({}); // todo
+        throw new Unauthorized("Authorization header value does not match expected format");
     }
     const accessToken = regexMatch[1];
 
@@ -41,9 +38,18 @@ export async function getSongRequests(req: Request, res: Response) {
         .where({
             access_token: accessToken
         });
+    if (userIds.length === 0) {
+        throw new Unauthorized("No such access token could be found");
+    }
     assert(userIds.length === 1);
-    const userId = userIds[0].user_id;
-    // todo: error handle if more than one user ID
+    // todo: do sufficient unit testing to convince myself that it will only ever return at most one userId, then remove assertion
+    return userIds[0].user_id;
+}
+
+export async function getSongRequests(req: Request, res: Response) {
+    console.log("getting song requests");
+    const authHeader = req.header("Authorization");
+    const userId = await getUserId(authHeader);
 
     const adminRows = await db.select(1).from("administrators")
         .where({
@@ -139,7 +145,13 @@ GROUP BY r.request_id;
 }
 
 export async function requestSongs(req: Request, res: Response) {
-    return res.status(OK).json({});
+    const userId = await getUserId(req.header("Authorization"));
+    // of the songsToAdd, check which ones are in the playlist already
+    // of the songsToRemove, check
+    return res.status(OK).json({
+        songsAlreadyInPlaylist: [],
+        songsNotInPlaylist: []
+    });
 }
 
 export async function updateRequestStatus(req: Request, res: Response) {
