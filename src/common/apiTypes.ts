@@ -49,6 +49,10 @@ export interface PlaylistSongsDifference {
     songsNotInPlaylist: string[];
 }
 
+export interface InvalidSongList {
+    invalidSongIds: string[];
+}
+
 export interface UserUpdateList {
     usersToAdd: string[];
     usersToRemove: string[];

@@ -105,6 +105,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaylistSongsDifference'
+        422:
+          description: One or more of the song IDs is not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidSongList'
   /playlists/{playlistId}/requests/{requestId}/vote:
     post:
       tags:
@@ -354,6 +360,13 @@ components:
           items:
             type: string
         songsNotInPlaylist:
+          type: array
+          items:
+            type: string
+    InvalidSongList:
+      type: object
+      properties:
+        invalidSongIds:
           type: array
           items:
             type: string
