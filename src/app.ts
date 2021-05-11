@@ -7,11 +7,12 @@ import {handleErrors} from "./common/handleErrors.js";
 
 const app = express();
 
-app.use('/', baseRouter);
-
-// .use(express.static(__dirname + '/../public'))
+// add middleware before routes, except for error handling
 app.use(cors())
-   .use(cookieParser());
+    .use(cookieParser())
+    .use(express.json());
+
+app.use('/', baseRouter);
 
 app.use(handleErrors);
 
