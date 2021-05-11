@@ -37,3 +37,9 @@ CREATE TABLE users (
     refresh_token VARCHAR(512) NOT NULL,
     PRIMARY KEY (user_id)
 );
+
+ALTER TABLE request_votes DROP FOREIGN KEY request_votes_ibfk_1;
+
+ALTER TABLE request_votes
+    ADD CONSTRAINT fk_request_id
+        FOREIGN KEY (request_id) REFERENCES song_requests (request_id) ON DELETE CASCADE;
