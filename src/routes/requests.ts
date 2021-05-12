@@ -7,10 +7,11 @@ import assert from "assert";
 import * as dbTypes from "../common/dbTypes.js";
 import got, {Response as GotResponse} from "got";
 import {RequestStatus} from "../common/commonTypes.js";
-import {Unauthorized} from "../common/errors.js";
+import {Conflict, NotFound, Unauthorized} from "../common/errors.js";
 import _ from "lodash";
+import {getPlaylistAdministrators} from "../common/dbCalls.js";
 
-const { OK, UNPROCESSABLE_ENTITY } = StatusCodes;
+const { OK, NOT_FOUND, UNPROCESSABLE_ENTITY, FORBIDDEN } = StatusCodes;
 
 interface DBSongRequest {
     request_id: number;
@@ -24,8 +25,9 @@ interface RequestId {
     request_id: number;
 }
 
-async function getUserId(authHeader: string | undefined): Promise<string> {
+async function getUserId(req: Request): Promise<[authHeader: string, userId: string]> {
     // validate Authorization header
+    const authHeader = req.header("Authorization");
     if (authHeader === undefined) {
         throw new Unauthorized("Missing authorization header");
     }
@@ -45,13 +47,12 @@ async function getUserId(authHeader: string | undefined): Promise<string> {
     }
     assert(userIds.length === 1);
     // todo: do sufficient unit testing to convince myself that it will only ever return at most one userId, then remove assertion
-    return userIds[0].user_id;
+    return [authHeader, userIds[0].user_id];
 }
 
 export async function getSongRequests(req: Request, res: Response) {
     console.log("getting song requests");
-    const authHeader = req.header("Authorization");
-    const userId = await getUserId(authHeader);
+    const [authHeader, userId] = await getUserId(req);
 
     const adminRows = await db.select(1).from("administrators")
         .where({
@@ -152,8 +153,7 @@ async function getTracks(authHeader: string | undefined, songIds: string[]): Pro
 }
 
 export async function requestSongs(req: Request, res: Response) {
-    const authHeader = req.header("Authorization");
-    const userId = await getUserId(authHeader);
+    const [authHeader, userId] = await getUserId(req);
 
     const body: apiTypes.SongUpdateList = req.body;
     // todo: is this "if" needed?
@@ -229,22 +229,165 @@ export async function requestSongs(req: Request, res: Response) {
     });
 }
 
-async function getSongsInPlaylist(playlistId: string, authHeader: string | undefined): Promise<string[]> {
-    const playlistTracksResponse: GotResponse<any> = await got(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+async function getSongsInPlaylist(playlistId: string, authHeader: string): Promise<string[]> {
+    const playlist = await getPlaylist(playlistId, authHeader);
+    return getTrackIdsFromPlaylist(playlist);
+}
+
+function getTrackIdsFromPlaylist(playlist: any): string[] {
+    return playlist.tracks.items.map((item: any) => item.track.id);
+}
+
+async function getPlaylist(playlistId: string, authHeader: string): Promise<any> {
+    const playlistResponse: GotResponse<any> = await got(`https://api.spotify.com/v1/playlists/${playlistId}`, {
         headers: {
             Authorization: authHeader
         },
         searchParams: {
-            fields: "tracks.items(track(id))",
+            fields: "id,owner.id,tracks.items(track(id))",
             market: "from_token"
         },
         responseType: "json"
     });
-    return playlistTracksResponse.body.tracks.items.map((item: any) => item.track.id);
+    if (playlistResponse.statusCode == NOT_FOUND) {
+        throw new NotFound(`Playlist ${playlistId} does not exist`);
+    }
+    return playlistResponse.body;
 }
 
 export async function updateRequestStatus(req: Request, res: Response) {
+    const [authHeader, userId] = await getUserId(req);
+    const playlistId = req.params.playlistId;
+    const playlist = await getPlaylist(playlistId, authHeader);
+    const request = await checkPendingRequest(req.params.requestId);
+    if(!await checkIsManager(userId, playlistId, playlist)) {
+        return res.status(FORBIDDEN).json({
+            message: "You are not an administrator of this playlist"
+        });
+    }
+
+    const body: apiTypes.SongRequestStatusUpdate = req.body;
+    if (body.status === commonTypes.RequestStatus.Approved) {
+        const success = await applyRequestToPlaylist(request, playlist, authHeader);
+        console.log("applied to playlist");
+        await finishRequestRecord(req.params.requestId, body.status);
+        console.log("finished request record");
+        if (!success) {
+            return res.status(OK).json({
+                message: "The request was finished but not applied because the playlist state is already in accord with the request"
+            });
+        }
+    } else if (body.status === commonTypes.RequestStatus.Rejected) {
+        await finishRequestRecord(req.params.requestId, body.status);
+    } else {
+        return res.status(UNPROCESSABLE_ENTITY).json({
+            message: "Cannot set a request to pending"
+        });
+    }
+
+    // make sure the user is the owner or an admin of the playlist
+    // make sure the request ID exists, and for now make sure the status is pending - just fetch the whole request
+    // update the request status
+    // if going from pending to rejected/approved:
+    // - change request_status field in DB
+    // - add delete_at timestamp five minutes in the future
+    // - if approve, add/remove song to/from playlist (only add if not in playlist already)
+    // - if reject, do nothing
+
+    // if going from approved to pending:
+    // - if the request was a remove request, add the song to the end of the playlist
+    // - if the request was an add request, remove all instances of the song from the playlist
+    // - change the status to Pending, and set delete_at to null
+
+    // if going from rejected to pending:
+    // - change the status to Pending, and set delete_at to null
+    console.log("returning");
     return res.status(OK).json({});
+}
+
+async function checkPendingRequest(requestId: string): Promise<any> {
+    const rows = await db.select(["request_type", "song_id", "request_status"]).from("song_requests").where({
+        request_id: requestId
+    });
+    const request = rows[0];
+    if (request.request_status !== commonTypes.RequestStatus.Pending) {
+        throw new Conflict(`Request status is ${request.request_status}, expected pending`);
+    }
+    return request;
+}
+
+async function checkIsManager(userId: string, playlistId: string, playlist: any): Promise<boolean> {
+    if (playlist.owner.id === userId) {
+        return true;
+    }
+    const admins = await getPlaylistAdministrators(playlistId);
+    return admins.includes(userId);
+}
+
+async function finishRequestRecord(requestId: string, status: commonTypes.RequestStatus) {
+    // YYYY-MM-DD HH:MI:SS
+    await db("song_requests")
+        .where({request_id: requestId})
+        .update({
+            request_status: status,
+            delete_at: formatDateForSQL(addMinutesToDate(new Date(), 5))
+        });
+}
+
+/**
+ * Returns true if the request was applied to the playlist, false otherwise (e.g. if the playlist already had the song).
+ */
+async function applyRequestToPlaylist(request: any, playlist: any, authHeader: string): Promise<boolean> {
+    // todo: for now we assume the user is the owner, but later use access tokens from DB to let other admins approve
+
+    const trackIds = getTrackIdsFromPlaylist(playlist);
+    if (request.request_type === dbTypes.RequestType.Add) {
+        if (trackIds.includes(request.song_id)) {
+            return false;
+        }
+        console.log("here we go");
+        const response = await got(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
+            headers: {
+                Authorization: authHeader
+            },
+            searchParams: {
+                uris: `spotify:track:${request.song_id}`
+            },
+            method: "POST",
+            responseType: "json"
+        });
+        console.log("done");
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+            return true;
+        }
+    } else if (request.request_type === dbTypes.RequestType.Remove) {
+        if (!trackIds.includes(request.song_id)) {
+            return false;
+        }
+        const response = await got(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
+            headers: {
+                Authorization: authHeader,
+                "Content-Type": "application/json",
+            },
+            json: {
+                tracks: [{uri: `spotify:track:${request.song_id}`}]
+            },
+            method: "DELETE",
+            responseType: "json"
+        });
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function addMinutesToDate(date: Date, minutes: number) {
+    return new Date(date.getTime() + minutes * 60000);
+}
+
+function formatDateForSQL(date: Date) {
+    return date.toISOString().slice(0, 19).replace('T', ' ');
 }
 
 export async function voteForRequest(req: Request, res: Response) {

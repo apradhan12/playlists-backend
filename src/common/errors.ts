@@ -15,6 +15,12 @@ export class Unauthorized extends GeneralError {
     }
 }
 
+export class Conflict extends GeneralError {
+    getCode() {
+        return 409;
+    }
+}
+
 export class BadRequest extends GeneralError {
     getCode() {
         return 400;
