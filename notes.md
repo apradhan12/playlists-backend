@@ -43,6 +43,7 @@
 - undo approving a request/rejecting a request
 - figure out timezone issues for delete_at
 - add JSON Schema / OpenAPI validation for request bodies
+- frontend: sort requests by votes
 
  
 # Bugs

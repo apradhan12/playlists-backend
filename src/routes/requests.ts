@@ -11,7 +11,7 @@ import {Conflict, NotFound, Unauthorized} from "../common/errors.js";
 import _ from "lodash";
 import {getPlaylistAdministrators} from "../common/dbCalls.js";
 
-const { OK, NOT_FOUND, UNPROCESSABLE_ENTITY, FORBIDDEN } = StatusCodes;
+const { OK, NOT_FOUND, UNPROCESSABLE_ENTITY, FORBIDDEN, BAD_REQUEST } = StatusCodes;
 
 interface DBSongRequest {
     request_id: number;
@@ -390,10 +390,49 @@ function formatDateForSQL(date: Date) {
     return date.toISOString().slice(0, 19).replace('T', ' ');
 }
 
-export async function voteForRequest(req: Request, res: Response) {
+async function getRequest(requestId: number): Promise<dbTypes.SongRequest> {
+    const requests = await db.select("*").from("song_requests")
+        .where({
+            request_id: requestId
+        });
+    if (requests.length === 0) {
+        throw new NotFound(`No request could be found with ID ${requestId}`);
+    }
+    return requests[0];
+}
 
+async function handleVotes(req: Request, res: Response, countCondition: (voteCount: number) => boolean, dbAction: (requestId: number, userId: string) => Promise<void>) {
+    const [, userId] = await getUserId(req); // validate user
+    const requestId = parseInt(req.params.requestId);
+    if (isNaN(requestId)) {
+        return res.status(BAD_REQUEST).json({
+            message: `${req.params.requestId} is not a number`
+        });
+    }
+    await getRequest(requestId); // validate request
+    const votes = await db("request_votes").count<Record<string, number>[]>("vote_id as count").where({
+        request_id: requestId,
+        user_id: userId
+    });
+    if (countCondition(votes[0].count)) {
+        await dbAction(requestId, userId);
+    }
+    return res.status(OK).json({});
+}
+
+export async function voteForRequest(req: Request, res: Response) {
+    // todo: prevent voting on requests scheduled for deletion
+    return await handleVotes(req, res, count => count === 0,
+        async (requestId: number, userId: string) => await db("request_votes").insert({
+            request_id: requestId,
+            user_id: userId
+        }));
 }
 
 export async function removeVoteForRequest(req: Request, res: Response) {
-
+    return await handleVotes(req, res, count => count === 1,
+        async (requestId: number, userId: string) => await db("request_votes").where({
+            request_id: requestId,
+            user_id: userId
+        }).del());
 }

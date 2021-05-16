@@ -1,33 +1,38 @@
-export class GeneralError extends Error {
-    constructor(message: string) {
+export abstract class GeneralError extends Error {
+    protected constructor(message: string) {
         super();
         this.message = message;
-    }
-
-    getCode() {
-        return 500;
     }
 }
 
 export class Unauthorized extends GeneralError {
-    getCode() {
-        return 401;
+    code: number;
+    constructor(message: string) {
+        super(message);
+        this.code = 401;
     }
 }
 
 export class Conflict extends GeneralError {
-    getCode() {
-        return 409;
+    code: number;
+    constructor(message: string) {
+        super(message);
+        this.code = 409;
     }
 }
 
 export class BadRequest extends GeneralError {
-    getCode() {
-        return 400;
+    code: number;
+    constructor(message: string) {
+        super(message);
+        this.code = 400;
     }
 }
+
 export class NotFound extends GeneralError {
-    getCode() {
-        return 404;
+    code: number;
+    constructor(message: string) {
+        super(message);
+        this.code = 404;
     }
 }

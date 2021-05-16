@@ -1,6 +1,6 @@
 import {Router} from 'express';
 import {updateSongs} from "./songs.js";
-import {getSongRequests, requestSongs, updateRequestStatus} from "./requests.js";
+import {getSongRequests, removeVoteForRequest, requestSongs, updateRequestStatus, voteForRequest} from "./requests.js";
 import {getAdministrators, updateAdministrators} from "./administrators.js";
 import {callback, login, refreshToken} from "./login.js";
 import cors from "cors";
@@ -14,6 +14,8 @@ const requestRouter = Router({mergeParams: true});
 requestRouter.get('/', expressAsyncHandler(getSongRequests));
 requestRouter.post('/', expressAsyncHandler(requestSongs));
 requestRouter.put('/:requestId', expressAsyncHandler(updateRequestStatus));
+requestRouter.post('/:requestId/vote', expressAsyncHandler(voteForRequest));
+requestRouter.delete('/:requestId/vote', expressAsyncHandler(removeVoteForRequest));
 
 const adminRouter = Router({mergeParams: true});
 adminRouter.get('/', expressAsyncHandler(getAdministrators));

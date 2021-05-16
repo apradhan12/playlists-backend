@@ -1,14 +1,13 @@
-import { GeneralError } from "./errors.js";
-import {Request, Response} from "express";
+import {NextFunction, Request, Response} from "express";
 
-export const handleErrors = (err: any, req: Request, res: Response) => {
-    console.error(err);
-    if (err instanceof GeneralError) {
-        return res.status(err.getCode()).json({
+export const handleErrors = (err: any, req: Request, res: Response, _: NextFunction) => {
+    if ("code" in err) {
+        return res.status(err.code).json({
             status: 'error',
             message: err.message
         });
     }
+    console.error(err);
     return res.status(500).json({
         status: 'error',
         message: err.message
