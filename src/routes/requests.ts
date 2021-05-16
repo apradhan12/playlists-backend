@@ -7,11 +7,12 @@ import assert from "assert";
 import * as dbTypes from "../common/dbTypes.js";
 import got, {Response as GotResponse} from "got";
 import {RequestStatus} from "../common/commonTypes.js";
-import {Conflict, NotFound, Unauthorized} from "../common/errors.js";
+import {Conflict, InternalServerError, NotFound, Unauthorized} from "../common/errors.js";
 import _ from "lodash";
 import {getPlaylistAdministrators} from "../common/dbCalls.js";
+import {getPlaylist, getUserId} from "../common/apiCalls.js";
 
-const { OK, NOT_FOUND, UNPROCESSABLE_ENTITY, FORBIDDEN, BAD_REQUEST } = StatusCodes;
+const { OK, UNPROCESSABLE_ENTITY, FORBIDDEN, BAD_REQUEST, UNAUTHORIZED } = StatusCodes;
 
 interface DBSongRequest {
     request_id: number;
@@ -23,31 +24,6 @@ interface DBSongRequest {
 
 interface RequestId {
     request_id: number;
-}
-
-async function getUserId(req: Request): Promise<[authHeader: string, userId: string]> {
-    // validate Authorization header
-    const authHeader = req.header("Authorization");
-    if (authHeader === undefined) {
-        throw new Unauthorized("Missing authorization header");
-    }
-    const regexMatch = authHeader.match(/^Bearer (.*)$/);
-    if (regexMatch === null) {
-        throw new Unauthorized("Authorization header value does not match expected format");
-    }
-    const accessToken = regexMatch[1];
-
-    // get user from access token
-    const userIds = await db.select("user_id").from("users")
-        .where({
-            access_token: accessToken
-        });
-    if (userIds.length === 0) {
-        throw new Unauthorized("No such access token could be found");
-    }
-    assert(userIds.length === 1);
-    // todo: do sufficient unit testing to convince myself that it will only ever return at most one userId, then remove assertion
-    return [authHeader, userIds[0].user_id];
 }
 
 export async function getSongRequests(req: Request, res: Response) {
@@ -139,17 +115,25 @@ GROUP BY r.request_id;
 }
 
 async function getTracks(authHeader: string | undefined, songIds: string[]): Promise<any[]> {
-    const tracksResponse: GotResponse<any> = await got("https://api.spotify.com/v1/tracks", {
-        headers: {
-            Authorization: authHeader
-        },
-        searchParams: {
-            ids: songIds.join(","),
-            market: "from_token"
-        },
-        responseType: "json"
-    });
-    return tracksResponse.body.tracks;
+    try {
+        const tracksResponse: GotResponse<any> = await got("https://api.spotify.com/v1/tracks", {
+            headers: {
+                Authorization: authHeader
+            },
+            searchParams: {
+                ids: songIds.join(","),
+                market: "from_token"
+            },
+            responseType: "json"
+        });
+        return tracksResponse.body.tracks;
+    } catch (error) {
+        if (error.response.statusCode === UNAUTHORIZED) {
+            throw new Unauthorized("Access token is unauthorized");
+            // todo: request new access token from Spotify, then let the client know by sending it in the response
+        }
+        throw new InternalServerError(error.response.body);
+    }
 }
 
 export async function requestSongs(req: Request, res: Response) {
@@ -236,23 +220,6 @@ async function getSongsInPlaylist(playlistId: string, authHeader: string): Promi
 
 function getTrackIdsFromPlaylist(playlist: any): string[] {
     return playlist.tracks.items.map((item: any) => item.track.id);
-}
-
-async function getPlaylist(playlistId: string, authHeader: string): Promise<any> {
-    const playlistResponse: GotResponse<any> = await got(`https://api.spotify.com/v1/playlists/${playlistId}`, {
-        headers: {
-            Authorization: authHeader
-        },
-        searchParams: {
-            fields: "id,owner.id,tracks.items(track(id))",
-            market: "from_token"
-        },
-        responseType: "json"
-    });
-    if (playlistResponse.statusCode == NOT_FOUND) {
-        throw new NotFound(`Playlist ${playlistId} does not exist`);
-    }
-    return playlistResponse.body;
 }
 
 export async function updateRequestStatus(req: Request, res: Response) {

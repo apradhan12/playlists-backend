@@ -25,7 +25,7 @@
   - refresh token (client- and server-side)
   - access token (client- and server-side)
   - display name (client-side)
-  - user ID (server-side)
+  - user ID (server-side, and maybe client-side)
 - Should we do any kind of caching?
   - we'll do that later
 - what if the playlist is manually changed (e.g. add song A) while there is a request to add song A?
@@ -37,13 +37,24 @@
   - for now, whenever the page loads
 - in what contexts should we separate owner vs. administrators?
   - probably all, since it maintains a single source of truth for each
-
+- Should the GET administrators route combine the owner with the administrators, or should we have the frontend make the calls?
+  - We already need to call the Spotify API on the backend to confirm the playlist's existence, so it would make sense to include
+  - It should probably also send both user IDs and display names, since we may want to link to their profiles
+- Should we prevent non-admins from seeing the admins list?
+  - probably not necessary
+- for updating admins, should we return admins who were already there or admins not in the list?
+  - probably overkill, in fact same for requests - probably can get rid of that
+- is it premature optimization to allow multiple admins to be added/removed at once?
+  - not really, because that's just how the client flow works
+  - we could have two separate routes for adding and for removing, but the logic isn't that complex and redundancy can be completely avoided by using "if length === 0" checks before API/DB calls
 
 # TODO
 - undo approving a request/rejecting a request
 - figure out timezone issues for delete_at
 - add JSON Schema / OpenAPI validation for request bodies
 - frontend: sort requests by votes
+- handle rate limits
+- use mutex or some kind of lock to prevent people from updating administrators while the server logic is being performed?
 
  
 # Bugs

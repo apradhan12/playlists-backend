@@ -384,10 +384,19 @@ components:
     UserList:
       type: object
       properties:
-        users:
+        owner:
+          $ref: '#/components/schemas/User'
+        administrators:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/User'
+    User:
+      type: object
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
     DeletionTimestamp:
       type: object
       properties:

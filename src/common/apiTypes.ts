@@ -65,3 +65,13 @@ export interface DeletionTimestamp {
 export interface SongRequestStatusUpdate {
     status: RequestStatus;
 }
+
+export interface UserList {
+    owner: User;
+    administrators: User[];
+}
+
+export interface User {
+    userId: string;
+    displayName: string;
+}
