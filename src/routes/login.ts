@@ -94,6 +94,9 @@ export async function callback(req: Request, res: Response) {
                 // we can also pass the token to the browser to make requests from there
                 res.redirect('http://localhost:3000/callback?' +
                     querystring.stringify({
+                        user_id: userId,
+                        display_name: response.body.display_name,
+                        profile_picture_url: response.body.images[0].url,
                         access_token: access_token,
                         refresh_token: refresh_token
                     }));
