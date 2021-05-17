@@ -25,7 +25,7 @@
   - refresh token (client- and server-side)
   - access token (client- and server-side)
   - display name (client-side)
-  - user ID (server-side, and maybe client-side)
+  - user ID (client- and server-side)
 - Should we do any kind of caching?
   - we'll do that later
 - what if the playlist is manually changed (e.g. add song A) while there is a request to add song A?
@@ -55,6 +55,16 @@
 - frontend: sort requests by votes
 - handle rate limits
 - use mutex or some kind of lock to prevent people from updating administrators while the server logic is being performed?
+- use the client credentials flow in Spotify API requests where possible so that users don't need to be logged in unless they're on a page that needs authorization
+- get beyond first 100 songs of a playlist where needed (e.g. in checking song requests)
+- deal with lack of profile picture URL (and possibly display name) on both front- and back-end
+- **think about types on the frontend**
+- **think about code sharing on the frontend**
+- find all locations where API/DB calls are made with potentially empty lists
+- add a 404 page
+- allow scrolling through search results with arrow keys
+- make songsToAdd and songsToRemove optional in POST /requests route
+- change axios.get calls to use the `axios()` format
 
  
 # Bugs

@@ -72,8 +72,10 @@ FROM song_requests AS r LEFT JOIN request_votes AS v
 WHERE r.playlist_id = 'playlist1' AND r.request_status = 'pending'
 GROUP BY r.request_id;
      */
-
-    const tracks = await getTracks(authHeader, songRequests.map(request => request.song_id));
+    let tracks = [];
+    if (songRequests.length > 0) {
+        tracks = await getTracks(authHeader, songRequests.map(request => request.song_id));
+    }
     // todo: handle error
     // todo: add Spotify types?
 
