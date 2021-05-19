@@ -39,8 +39,7 @@ export async function getPlaylist(playlistId: string, authHeader: string): Promi
             Authorization: authHeader
         },
         searchParams: {
-            fields: "id,owner.id,owner.display_name,tracks.items(track(id))",
-            market: "from_token"
+            fields: "id,owner.id,owner.display_name,tracks.items(track(id))"
         },
         responseType: "json"
     });

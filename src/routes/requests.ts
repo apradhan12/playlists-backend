@@ -123,8 +123,7 @@ async function getTracks(authHeader: string | undefined, songIds: string[]): Pro
                 Authorization: authHeader
             },
             searchParams: {
-                ids: songIds.join(","),
-                market: "from_token"
+                ids: songIds.join(",")
             },
             responseType: "json"
         });
@@ -166,6 +165,7 @@ export async function requestSongs(req: Request, res: Response) {
     const songsToRemove = _.uniq(body.songsToRemove);
     const [songsAlreadyInPlaylist, filteredSongsToAdd] = _.partition(songsToAdd, songId => playlistSongIds.includes(songId));
     const [filteredSongsToRemove, songsNotInPlaylist] = _.partition(songsToRemove, songId => playlistSongIds.includes(songId));
+    console.log(`Here are the songs in the playlist: ${playlistSongIds.slice(0, 10)}, ${songsToRemove}`);
 
     const songIdToRequest = (requestType: dbTypes.RequestType) => (songId: string) => ([
         songId,
@@ -176,7 +176,7 @@ export async function requestSongs(req: Request, res: Response) {
 
     console.log("now i'm here");
     const existingRequests = await db.select(["request_id", "song_id", "request_type"]).from("song_requests")
-        .whereIn(["song_id", "request_type"], allRequests);
+        .whereIn(["song_id", "request_type"], allRequests).andWhere({playlist_id: req.params.playlistId});
     console.log("now I'm there");
 
     const newRequests = allRequests.filter(request => !existingRequests.some(existingRequest => existingRequest.song_id === request[0] && existingRequest.request_type === request[1]));
@@ -192,6 +192,7 @@ export async function requestSongs(req: Request, res: Response) {
         await db("request_votes").insert(existingRequestsNotVotedFor.map(request => ({request_id: request.request_id, user_id: userId})));
     }
     console.log("now I'm there3");
+    console.log(`new requests: ${JSON.stringify(newRequests)}`);
     if (newRequests.length > 0) {
         const requestIdList = await db("song_requests").insert(newRequests.map(request => ({
             playlist_id: req.params.playlistId,
