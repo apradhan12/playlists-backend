@@ -2,7 +2,7 @@ import {Router} from 'express';
 import {updateSongs} from "./songs.js";
 import {getSongRequests, removeVoteForRequest, requestSongs, updateRequestStatus, voteForRequest} from "./requests.js";
 import {getAdministrators, updateAdministrators} from "./administrators.js";
-import {callback, login, refreshToken} from "./login.js";
+import {callback, getClientCredentials, login, refreshToken} from "./login.js";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import expressAsyncHandler from "express-async-handler";
@@ -33,5 +33,6 @@ baseRouter.use('/playlists/:playlistId', expressAsyncHandler(playlistRouter));
 baseRouter.get('/login', expressAsyncHandler(login));
 baseRouter.get('/callback', expressAsyncHandler(callback));
 baseRouter.get('/refresh_token', expressAsyncHandler(refreshToken));
+baseRouter.get('/client_credentials', expressAsyncHandler(getClientCredentials));
 
 export default baseRouter;

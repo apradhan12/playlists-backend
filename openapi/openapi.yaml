@@ -60,6 +60,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AccessToken'
+  /client_credentials:
+    get:
+      tags:
+        - login
+      summary: Get access token through client credentials flow
+      operationId: getClientCredentials
+      responses:
+        200:
+          description: Obtained new access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccessToken'
   /playlists/{playlistId}/requests:
     get:
       tags:
